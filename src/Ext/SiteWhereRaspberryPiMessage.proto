@@ -1,0 +1,145 @@
+syntax = "proto3";
+option csharp_namespace = "sitewhere_dotnet_agent.Lib.SiteWhere";
+
+// Model Objects
+message Model {
+	
+	// A single piece of metadata.
+	message Metadata {
+		string name = 1;
+		string value = 2;
+	}
+
+	// Report device location.
+	message DeviceLocation {
+		string hardwareId = 1;
+		double latitude = 2;
+		double longitude = 3;
+		double elevation = 4;
+		fixed64 eventDate = 5;
+		repeated Metadata metadata = 6;
+	}
+
+	// Report device alert.
+	message DeviceAlert {
+		string hardwareId = 1;
+		string alertType = 2;
+		string alertMessage = 3;
+		fixed64 eventDate = 4;
+		repeated Metadata metadata = 5;
+	}
+	
+	// A single measurement.
+	message Measurement {
+		string measurementId = 1;
+		double measurementValue = 2;
+	}
+
+	// Event message for device measurements.
+	message DeviceMeasurements {
+		string hardwareId = 1;
+		repeated Measurement measurement = 2;
+		fixed64 eventDate = 3;
+		repeated Metadata metadata = 4;
+	}
+	
+	// Create a device stream.
+	message DeviceStream {
+		string hardwareId = 1;
+		string streamId = 2;
+		string contentType = 3;
+		repeated Metadata metadata = 4;
+	}
+	
+	// A chunk of streaming data.
+	message DeviceStreamData {
+		string hardwareId = 1;
+		string streamId = 2;
+		fixed64 sequenceNumber = 3;
+		bytes data = 4;
+		fixed64 eventDate = 5;
+		repeated Metadata metadata = 6;
+	}
+}
+
+// Commands sent from a device to SiteWhere.
+message SiteWhere {
+
+	enum Command {
+		NONE = 0;
+		SEND_REGISTRATION = 1; 
+		SEND_ACKNOWLEDGEMENT = 2; 
+		SEND_DEVICE_LOCATION = 3; 
+		SEND_DEVICE_ALERT = 4; 
+		SEND_DEVICE_MEASUREMENTS = 5;
+		SEND_DEVICE_STREAM = 6;
+		SEND_DEVICE_STREAM_DATA = 7;
+		REQUEST_DEVICE_STREAM_DATA = 8;
+	}
+	
+	// Header contains the command and originator.
+	message Header {
+		Command command = 1;
+		string originator = 2;
+	}
+
+	// Register a device with SiteWhere.
+	message RegisterDevice {
+		string hardwareId = 1;
+		string specificationToken = 2;
+		repeated Model.Metadata metadata = 3;
+		string siteToken = 4;
+	}
+
+	// Acknowledge previous command.
+	message Acknowledge {
+		string hardwareId = 1;
+		string message = 2;
+	}
+	
+	// Request for a chunk of data from a device stream.
+	message DeviceStreamDataRequest {
+		string hardwareId = 1;
+		string streamId = 2;
+		fixed64 sequenceNumber = 3;
+	}
+}
+
+// Commands sent from SiteWhere to a device.
+message Device {
+
+	enum Command {
+		NONE = 0;
+		ACK_REGISTRATION = 1; 
+		ACK_DEVICE_STREAM = 2;
+		RECEIVE_DEVICE_STREAM_DATA = 3;
+	} 
+	
+	// Header contains the command and originator.
+	message Header {
+		Command command = 1;
+		string originator = 2;
+		string nestedPath = 3;
+		string nestedSpec = 4;
+	}
+
+	// Enumeration of registation state responses.
+	enum RegistrationAckState {NONE_RegistrationAckState = 0; NEW_REGISTRATION = 1; ALREADY_REGISTERED = 2; REGISTRATION_ERROR = 3;} 
+	enum RegistrationAckError {NONE_RegistrationAckError = 0; INVALID_SPECIFICATION = 1; SITE_TOKEN_= 2; NEW_DEVICES_NOT_ALLOWED = 3;} 
+
+	// Acknowledges registration.
+	message RegistrationAck {
+		RegistrationAckState state = 1;
+		RegistrationAckError errorType = 2;
+		string errorMessage = 3;
+	}
+	
+	// Enumeration of device stream creation responses.
+	enum DeviceStreamAckState {NONE_DeviceStreamAckState = 0; STREAM_CREATED = 1; STREAM_EXISTS = 2; STREAM_FAILED = 3;} 
+	
+	// Acknowledges creation of device stream.
+	message DeviceStreamAck {
+		string streamId = 1;
+		DeviceStreamAckState state = 2;
+	}
+}
